@@ -3,7 +3,7 @@ name: generate-uuid
 on:
   issues:
     types: [opened, edited]
-    
+
 permissions:
   issues: write
   contents: read
@@ -12,32 +12,37 @@ jobs:
   upload_selfie:
     runs-on: ubuntu-latest
     steps:
-    
-      - name: Extraer link de la imagen del issue
-        id: extractlink
+
+      - name: Mostrar el body completo del issue (debug)
         run: |
-          echo "----- Cuerpo del issue completo -----"
+          echo "------ Body completo ------"
           echo "${{ github.event.issue.body }}"
-          # Busca la primera URL que aparezca en el body (podes ajustar si queres buscar una key tipo image_link)
-          LINK=$(echo "${{ github.event.issue.body }}" | grep -oE 'https?://[^ )\n\r]*')
-          echo "Link encontrado: $LINK"
-          echo "link=$LINK" >> $GITHUB_OUTPUT
-    
-      - name: Extraer datos del issue
+
+      - name: Extraer datos del Issue Form
         id: extract
         run: |
-          LINK=$(echo "${{ github.event.issue.body }}" | grep -oE 'https?://[^ )\n\r]*')
-          EMAIL=$(echo "${{ github.event.issue.body }}" | grep -A1 'Email de usuario' | tail -1 | xargs)
-          COUNTRY=$(echo "${{ github.event.issue.body }}" | grep -A1 'País' | tail -1 | xargs)
-          ENV=$(echo "${{ github.event.issue.body }}" | grep -A1 'Ambiente' | tail -1 | xargs)
+          LINK=$(echo "${{ github.event.issue.body }}" | grep '^image_link:' | grep -oE 'https?://[^ )\n\r]*')
+          EMAIL=$(echo "${{ github.event.issue.body }}" | grep '^email:' | awk '{print $2}')
+          COUNTRY=$(echo "${{ github.event.issue.body }}" | grep '^country:' | awk '{print $2}')
+          ENVIRONMENT=$(echo "${{ github.event.issue.body }}" | grep '^environment:' | awk '{print $2}')
+          echo "Link: $LINK"
+          echo "Email: $EMAIL"
+          echo "Country: $COUNTRY"
+          echo "Environment: $ENVIRONMENT"
           echo "link=$LINK" >> $GITHUB_OUTPUT
           echo "email=$EMAIL" >> $GITHUB_OUTPUT
           echo "country=$COUNTRY" >> $GITHUB_OUTPUT
-          echo "env=$ENV" >> $GITHUB_OUTPUT
+          echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
 
       - name: Descargar imagen
         run: |
+          echo "Usando link: ${{ steps.extract.outputs.link }}"
           curl -L "${{ steps.extract.outputs.link }}" -o selfie.jpg
+
+      - name: Mostrar detalles del archivo descargado
+        run: |
+          file selfie.jpg
+          ls -lh selfie.jpg
 
       - name: Convertir imagen a base64 y guardar en output
         id: tobase64
@@ -54,7 +59,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: "✅ Selfie subida exitosamente o **${{ steps.extract.outputs.email }}**."
+              body: "✅ Selfie subida exitosamente para **${{ steps.extract.outputs.email }}**, país: **${{ steps.extract.outputs.country }}**, ambiente: **${{ steps.extract.outputs.environment }}**."
             })
 
       - name: Comentar error en el issue
@@ -66,7 +71,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: "❌ Hubo un error procesando la selfie. Por favor revisá el link y los datos, editá el issue si es necesario y volvé a intentar."
+              body: "❌ Hubo un error procesando la selfie. Revisá el link y los datos, editá el issue si es necesario y volvé a intentar."
             })
 
       - name: Cerrar el issue (solo si fue exitoso)
