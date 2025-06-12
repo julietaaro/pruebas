@@ -1,0 +1,45 @@
+name: Subir selfie para registro automático
+description: Usá este formulario para subir la selfie y los datos necesarios.
+title: "[SELFIE] Cargar selfie de usuario"
+labels: ["selfie", "automatizado"]
+
+body:
+  - type: input
+    id: image_link
+    attributes:
+      label: Link a la imagen (debe ser público)
+      description: "Pegá acá el link directo a la selfie (Google Drive, Dropbox, Imgur, etc.)"
+      placeholder: "https://i.imgur.com/xxxxxxx.jpeg"
+    validations:
+      required: true
+
+  - type: input
+    id: email
+    attributes:
+      label: Email de usuario
+      description: "Ingresá el email del usuario."
+      placeholder: "nombre@empresa.com"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: country
+    attributes:
+      label: País
+      description: "Seleccioná el país asociado"
+      options:
+        - arg
+        - mex
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Ambiente
+      description: "Seleccioná el ambiente"
+      options:
+        - dev
+        - stage
+    validations:
+      required: true
