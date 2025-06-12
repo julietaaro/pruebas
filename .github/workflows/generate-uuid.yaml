@@ -3,6 +3,10 @@ name: generate-uuid
 on:
   issues:
     types: [opened, edited]
+    
+permissions:
+  issues: write
+  contents: read
 
 jobs:
   upload_selfie:
