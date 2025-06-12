@@ -1,0 +1,67 @@
+name: generate-uuid
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  upload_selfie:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extraer datos del issue
+        id: extract
+        run: |
+          LINK=$(echo "${{ github.event.issue.body }}" | grep -oE 'https?://[^ )\n\r]*')
+          EMAIL=$(echo "${{ github.event.issue.body }}" | grep -A1 'Email de usuario' | tail -1 | xargs)
+          COUNTRY=$(echo "${{ github.event.issue.body }}" | grep -A1 'País' | tail -1 | xargs)
+          ENV=$(echo "${{ github.event.issue.body }}" | grep -A1 'Ambiente' | tail -1 | xargs)
+          echo "link=$LINK" >> $GITHUB_OUTPUT
+          echo "email=$EMAIL" >> $GITHUB_OUTPUT
+          echo "country=$COUNTRY" >> $GITHUB_OUTPUT
+          echo "env=$ENV" >> $GITHUB_OUTPUT
+
+      - name: Descargar imagen
+        run: |
+          curl -L "${{ steps.extract.outputs.link }}" -o selfie.jpg
+
+      - name: Convertir imagen a base64 y guardar en output
+        id: tobase64
+        run: |
+          B64=$(base64 -w 0 selfie.jpg)
+          echo "b64=$B64" >> $GITHUB_OUTPUT
+
+      - name: Comentar resultado en el issue (éxito)
+        if: ${{ success() }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: "✅ Selfie subida exitosamente o **${{ steps.extract.outputs.email }}**."
+            })
+
+      - name: Comentar error en el issue
+        if: ${{ failure() }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: "❌ Hubo un error procesando la selfie. Por favor revisá el link y los datos, editá el issue si es necesario y volvé a intentar."
+            })
+
+      - name: Cerrar el issue (solo si fue exitoso)
+        if: ${{ success() }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.update({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "closed"
+            })
