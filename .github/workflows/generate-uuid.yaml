@@ -12,6 +12,17 @@ jobs:
   upload_selfie:
     runs-on: ubuntu-latest
     steps:
+    
+      - name: Extraer link de la imagen del issue
+        id: extractlink
+        run: |
+          echo "----- Cuerpo del issue completo -----"
+          echo "${{ github.event.issue.body }}"
+          # Busca la primera URL que aparezca en el body (podes ajustar si queres buscar una key tipo image_link)
+          LINK=$(echo "${{ github.event.issue.body }}" | grep -oE 'https?://[^ )\n\r]*')
+          echo "Link encontrado: $LINK"
+          echo "link=$LINK" >> $GITHUB_OUTPUT
+    
       - name: Extraer datos del issue
         id: extract
         run: |
